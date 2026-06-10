@@ -1,0 +1,33 @@
+name: Missed-call alerter
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # каждые 5 минут (минимум для GitHub Actions)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Almaty
+      ONLINEPBX_API_KEY: ${{ secrets.ONLINEPBX_API_KEY }}
+      ONLINEPBX_DOMAIN:  ${{ secrets.ONLINEPBX_DOMAIN }}
+      WHATCRM_KEY:       ${{ secrets.WHATCRM_KEY }}
+      WHATCRM_TOKEN:     ${{ secrets.WHATCRM_TOKEN }}
+      WA_ALERT_CHAT:     ${{ secrets.WA_ALERT_CHAT }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check missed calls and alert
+        run: python3 check.py
+      - name: Persist dedup state
+        if: ${{ !cancelled() }}
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "alerter"
+          git add alerted.json
+          git diff --staged --quiet || git commit -m "state $(date +%H:%M)"
+          git pull --rebase --autostash -q || true
+          git push || true

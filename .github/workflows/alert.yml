@@ -1,16 +1,22 @@
 name: Missed-call alerter
 
+# Самокрутящийся воркер: один долгий запуск опрашивает PBX каждые 90с ~5.5ч,
+# потом перезапускает себя (PAT). Крон */20 — «мёртвый сторож» на случай,
+# если цепочка оборвётся. Guard не даёт крутиться двум одновременно.
 on:
-  schedule:
-    - cron: '*/5 * * * *'   # каждые 5 минут (минимум для GitHub Actions)
   workflow_dispatch:
+  schedule:
+    - cron: '*/20 * * * *'
+  push:
+    branches: [main]
 
 permissions:
   contents: write
 
 jobs:
-  check:
+  loop:
     runs-on: ubuntu-latest
+    timeout-minutes: 350
     env:
       TZ: Asia/Almaty
       ONLINEPBX_API_KEY: ${{ secrets.ONLINEPBX_API_KEY }}
@@ -20,14 +26,37 @@ jobs:
       WA_ALERT_CHAT:     ${{ secrets.WA_ALERT_CHAT }}
     steps:
       - uses: actions/checkout@v4
-      - name: Check missed calls and alert
-        run: python3 check.py
-      - name: Persist dedup state
-        if: ${{ !cancelled() }}
+
+      - name: Guard — не запускать второй воркер
+        id: guard
+        env:
+          GH_TOKEN: ${{ secrets.PAT }}
         run: |
-          git config user.email "actions@github.com"
-          git config user.name "alerter"
-          git add alerted.json
-          git diff --staged --quiet || git commit -m "state $(date +%H:%M)"
-          git pull --rebase --autostash -q || true
-          git push || true
+          n=$(gh api "repos/${{ github.repository }}/actions/workflows/alert.yml/runs?status=in_progress" --jq '.total_count' 2>/dev/null || echo 1)
+          q=$(gh api "repos/${{ github.repository }}/actions/workflows/alert.yml/runs?status=queued" --jq '.total_count' 2>/dev/null || echo 0)
+          echo "in_progress=$n queued=$q"
+          if [ "$((n+q))" -gt 1 ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; echo "Уже работает — выхожу"; fi
+
+      - name: Poll loop (каждые 90с)
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          END=$(( $(date +%s) + 19800 ))   # ~5ч30м
+          while [ "$(date +%s)" -lt "$END" ]; do
+            python3 check.py || true
+            sleep 90
+          done
+
+      - name: Persist dedup state
+        if: ${{ steps.guard.outputs.skip != 'true' && always() }}
+        run: |
+          git config user.email "actions@github.com"; git config user.name "alerter"
+          git add alerted.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -q -m "state $(date +%H:%M)"
+          git pull --rebase --autostash -q 2>/dev/null || true
+          git push -q 2>/dev/null || true
+
+      - name: Re-dispatch self (продолжить цепочку)
+        if: ${{ steps.guard.outputs.skip != 'true' && always() }}
+        env:
+          GH_TOKEN: ${{ secrets.PAT }}
+        run: gh workflow run alert.yml -R ${{ github.repository }} || true

@@ -15,7 +15,7 @@ from datetime import datetime
 
 KEY=os.environ['ONLINEPBX_API_KEY']; DOM=os.environ['ONLINEPBX_DOMAIN']; BASE=f'https://api.onlinepbx.ru/{DOM}'
 WHKEY=os.environ['WHATCRM_KEY']; WHTOK=os.environ['WHATCRM_TOKEN']; WA_CHAT=os.environ['WA_ALERT_CHAT']
-SLA_MIN=int(os.getenv('SLA_MIN','5')); MAX_AGE_MIN=int(os.getenv('MAX_AGE_MIN','12'))
+SLA_MIN=int(os.getenv('SLA_MIN','5')); MAX_AGE_MIN=int(os.getenv('MAX_AGE_MIN','25'))
 SHIFT_FROM=int(os.getenv('SHIFT_FROM','6')); SHIFT_TO=int(os.getenv('SHIFT_TO','24'))
 CTX=ssl.create_default_context(); CTX.check_hostname=False; CTX.verify_mode=ssl.CERT_NONE
 STATE='alerted.json'
@@ -80,7 +80,17 @@ def main():
         except Exception as e:
             print('wa err', e, flush=True)
     save_state(state)
-    print(f"{datetime.fromtimestamp(now):%H:%M} проверено, новых брейчей={checked}, отправлено={sent}", flush=True)
+    return f"{datetime.fromtimestamp(now):%H:%M} вх={len(inb)} брейчей={checked} отправлено={sent}"
 
 if __name__=='__main__':
-    main()
+    from datetime import datetime as _dt
+    try:
+        msg=main(); hb=f"{msg}"
+    except Exception as e:
+        import traceback
+        hb=f"ОШИБКА: {type(e).__name__}: {e}"
+        traceback.print_exc()
+    try:
+        with open('heartbeat.txt','w') as f: f.write(hb+"\n")
+    except Exception: pass
+    print(hb, flush=True)

@@ -40,9 +40,17 @@ jobs:
       - name: Poll loop (каждые 90с)
         if: steps.guard.outputs.skip != 'true'
         run: |
+          git config user.email "actions@github.com"; git config user.name "alerter"
           END=$(( $(date +%s) + 19800 ))   # ~5ч30м
           while [ "$(date +%s)" -lt "$END" ]; do
             python3 check.py || true
+            # heartbeat-коммит для диагностики
+            git add heartbeat.txt alerted.json 2>/dev/null || true
+            if ! git diff --staged --quiet; then
+              git commit -q -m "hb $(date +%H:%M)" || true
+              git pull --rebase --autostash -q 2>/dev/null || true
+              git push -q 2>/dev/null || true
+            fi
             sleep 90
           done
 

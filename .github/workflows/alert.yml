@@ -37,22 +37,6 @@ jobs:
           echo "in_progress=$n queued=$q"
           if [ "$((n+q))" -gt 1 ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; echo "Уже работает — выхожу"; fi
 
-      - name: WA send selftest (диагностика)
-        if: steps.guard.outputs.skip != 'true'
-        run: |
-          python3 - <<'PY'
-          import os,ssl,json,urllib.request
-          CTX=ssl.create_default_context(); CTX.check_hostname=False; CTX.verify_mode=ssl.CERT_NONE
-          K=os.environ['WHATCRM_KEY']; T=os.environ['WHATCRM_TOKEN']; CH=os.environ['WA_ALERT_CHAT']
-          print('chatId=', repr(CH), 'key_len=', len(K), 'tok_len=', len(T))
-          body=json.dumps({'chatId':CH,'body':'🔧 selftest облачной отправки алертера'}).encode()
-          req=urllib.request.Request(f'https://api.whatcrm.net/instances/{K}/sendMessage',data=body,headers={'X-Crm-Token':T,'Content-Type':'application/json'},method='POST')
-          try:
-              r=urllib.request.urlopen(req,context=CTX,timeout=40); print('SEND OK', r.status, r.read()[:200])
-          except Exception as e:
-              import traceback; traceback.print_exc()
-          PY
-
       - name: Poll loop (каждые 90с)
         if: steps.guard.outputs.skip != 'true'
         run: |

@@ -24,6 +24,7 @@ jobs:
       WHATCRM_KEY:       ${{ secrets.WHATCRM_KEY }}
       WHATCRM_TOKEN:     ${{ secrets.WHATCRM_TOKEN }}
       WA_ALERT_CHAT:     ${{ secrets.WA_ALERT_CHAT }}
+      PAT:               ${{ secrets.PAT }}
     steps:
       - uses: actions/checkout@v4
 
@@ -46,6 +47,17 @@ jobs:
           while [ "$(date +%s)" -lt "$END" ]; do
             python3 check.py || true
             N=$((N+1))
+            # Дневной отчёт: раз в день после 09:00 Алматы дёргаем daily_report.yml
+            # в onmed-agent (этот воркер надёжнее GitHub-планировщика). Маркер
+            # daily_last.txt не даёт диспатчить повторно в тот же день.
+            TODAY=$(date +%F)
+            if [ "$(date +%-H)" -ge 9 ] && [ "$(cat daily_last.txt 2>/dev/null)" != "$TODAY" ]; then
+              if GH_TOKEN="$PAT" gh workflow run daily_report.yml -R aslan797/onmed-agent 2>/dev/null; then
+                echo "$TODAY" > daily_last.txt
+                git add daily_last.txt 2>/dev/null || true
+                echo "[daily] dispatched daily_report for $TODAY"
+              fi
+            fi
             # alerted.json — коммитим сразу (был алерт); heartbeat — раз в ~10 мин (каждый 7-й тик)
             git add alerted.json 2>/dev/null || true
             if [ $((N % 7)) -eq 0 ]; then git add heartbeat.txt 2>/dev/null || true; fi

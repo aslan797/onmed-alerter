@@ -1,0 +1,24 @@
+name: diag
+on: [workflow_dispatch, push]
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    env:
+      WHATCRM_KEY: ${{ secrets.WHATCRM_KEY }}
+      WHATCRM_TOKEN: ${{ secrets.WHATCRM_TOKEN }}
+      WA_ALERT_CHAT: ${{ secrets.WA_ALERT_CHAT }}
+    steps:
+      - name: send test
+        run: |
+          python3 - <<'PY'
+          import os,ssl,json,urllib.request
+          CTX=ssl.create_default_context(); CTX.check_hostname=False; CTX.verify_mode=ssl.CERT_NONE
+          K=os.environ['WHATCRM_KEY']; T=os.environ['WHATCRM_TOKEN']; CH=os.environ['WA_ALERT_CHAT']
+          print('chatId=',repr(CH),'key_len=',len(K),'tok_len=',len(T))
+          body=json.dumps({'chatId':CH,'body':'diag test send'}).encode()
+          req=urllib.request.Request(f'https://api.whatcrm.net/instances/{K}/sendMessage',data=body,headers={'X-Crm-Token':T,'Content-Type':'application/json'},method='POST')
+          try:
+              r=urllib.request.urlopen(req,context=CTX,timeout=40); print('SEND_OK', r.status, r.read().decode()[:200])
+          except Exception as e:
+              import traceback; traceback.print_exc()
+          PY

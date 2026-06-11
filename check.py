@@ -78,9 +78,11 @@ def main():
         try:
             send_wa(txt); state[key]=now; sent+=1
         except Exception as e:
+            main.last_err=f"{type(e).__name__}: {str(e)[:120]}"
             print('wa err', e, flush=True)
     save_state(state)
-    return f"{datetime.fromtimestamp(now):%H:%M} вх={len(inb)} брейчей={checked} отправлено={sent}"
+    err=getattr(main,'last_err','')
+    return f"{datetime.fromtimestamp(now):%H:%M} вх={len(inb)} брейчей={checked} отправлено={sent}"+(f" | SENDERR: {err}" if err else "")
 
 if __name__=='__main__':
     from datetime import datetime as _dt

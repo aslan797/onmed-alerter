@@ -72,7 +72,12 @@ def check_wa(state, now):
         if key in state: continue
         checked+=1
         name=c.get('name','клиент')
-        txt=f"💬 WhatsApp: клиент {name} ждёт ответа {round(age)} мин. Кто свободен, ответьте 🙏"
+        body=(lm.get('body') or '').strip().replace('\n',' ')
+        if not body:
+            body={'ptt':'[голосовое]','audio':'[аудио]','image':'[фото]','video':'[видео]',
+                  'document':'[файл]','sticker':'[стикер]','location':'[геолокация]'}.get(lm.get('type',''),'[вложение]')
+        if len(body)>140: body=body[:140]+'…'
+        txt=f"💬 WhatsApp: клиент {name} ждёт ответа {round(age)} мин.\n«{body}»\nКто свободен, ответьте 🙏"
         try:
             send_wa(txt, WA_MSG_CHAT); state[key]=now; sent+=1
         except Exception as e:

@@ -17,6 +17,9 @@ KEY=os.environ['ONLINEPBX_API_KEY']; DOM=os.environ['ONLINEPBX_DOMAIN']; BASE=f'
 WHKEY=os.environ['WHATCRM_KEY']; WHTOK=os.environ['WHATCRM_TOKEN']; WA_CHAT=os.environ['WA_ALERT_CHAT']
 SLA_MIN=int(os.getenv('SLA_MIN','5')); MAX_AGE_MIN=int(os.getenv('MAX_AGE_MIN','25'))
 SHIFT_FROM=int(os.getenv('SHIFT_FROM','6')); SHIFT_TO=int(os.getenv('SHIFT_TO','24'))
+# WhatsApp-сообщения: клиент написал, не прочитано >WA_SLA_MIN мин → пуш. Цель — WA_MSG_CHAT (по умолч. тот же чат).
+WA_MSG_CHAT=os.getenv('WA_MSG_CHAT', WA_CHAT)
+WA_SLA_MIN=int(os.getenv('WA_SLA_MIN','5')); WA_MAX_AGE_MIN=int(os.getenv('WA_MAX_AGE_MIN','30'))
 CTX=ssl.create_default_context(); CTX.check_hostname=False; CTX.verify_mode=ssl.CERT_NONE
 STATE='alerted.json'
 
@@ -36,11 +39,45 @@ def pbx(frm,to):
         headers={'x-pbx-authentication':f"{ad['key_id']}:{ad['key']}",'Content-Type':'application/json'}, method='POST')
     return (json.load(urllib.request.urlopen(req, context=CTX, timeout=60)) or {}).get('data') or []
 
-def send_wa(text):
-    body=json.dumps({'chatId':WA_CHAT,'body':text}).encode()
+def send_wa(text, chat=None):
+    body=json.dumps({'chatId':chat or WA_CHAT,'body':text}).encode()
     req=urllib.request.Request(f'https://api.whatcrm.net/instances/{WHKEY}/sendMessage', data=body,
         headers={'X-Crm-Token':WHTOK,'Content-Type':'application/json'}, method='POST')
     urllib.request.urlopen(req, context=CTX, timeout=40)
+
+def wa_dialogs():
+    req=urllib.request.Request(f'https://api.whatcrm.net/instances/{WHKEY}/dialogs',
+        headers={'X-Crm-Token':WHTOK})
+    return json.load(urllib.request.urlopen(req, context=CTX, timeout=60)) or []
+
+def check_wa(state, now):
+    """WhatsApp: клиент написал, НЕ прочитано >WA_SLA_MIN мин, раб.часы → пуш в WA_MSG_CHAT. Дедуп по id сообщения."""
+    checked=sent=0
+    try:
+        dialogs=wa_dialogs()
+    except Exception as e:
+        main.last_err=f"WA dialogs: {type(e).__name__}: {str(e)[:90]}"; return 0,0
+    for c in dialogs:
+        if c.get('isGroup') or not c.get('unreadCount'): continue
+        lm=(c.get('lastMessage') or {}).get('_data') or {}
+        if lm.get('id',{}).get('fromMe') is not False: continue   # последнее сообщение — от клиента
+        t=lm.get('t')
+        if not t: continue
+        age=(now-t)/60
+        if age<WA_SLA_MIN or age>WA_MAX_AGE_MIN: continue
+        dt=datetime.fromtimestamp(t)
+        if not (SHIFT_FROM<=dt.hour<SHIFT_TO): continue
+        lid=c.get('id',{}).get('_serialized',''); mid=lm.get('id',{}).get('id','')
+        key=f"wa-{lid}-{mid}"
+        if key in state: continue
+        checked+=1
+        name=c.get('name','клиент')
+        txt=f"💬 WhatsApp: клиент {name} ждёт ответа {round(age)} мин (не прочитано). Кто свободен, ответьте 🙏"
+        try:
+            send_wa(txt, WA_MSG_CHAT); state[key]=now; sent+=1
+        except Exception as e:
+            main.last_err=f"WA send: {type(e).__name__}: {str(e)[:100]}"
+    return checked,sent
 
 def load_state():
     try:
@@ -80,9 +117,11 @@ def main():
         except Exception as e:
             main.last_err=f"{type(e).__name__}: {str(e)[:120]}"
             print('wa err', e, flush=True)
+    wa_checked,wa_sent=check_wa(state, now)
     save_state(state)
     err=getattr(main,'last_err','')
-    return f"{datetime.fromtimestamp(now):%H:%M} вх={len(inb)} брейчей={checked} отправлено={sent}"+(f" | SENDERR: {err}" if err else "")
+    return (f"{datetime.fromtimestamp(now):%H:%M} вх={len(inb)} брейчей={checked} отпр={sent}"
+            f" | WA брейчей={wa_checked} отпр={wa_sent}"+(f" | ERR: {err}" if err else ""))
 
 if __name__=='__main__':
     from datetime import datetime as _dt

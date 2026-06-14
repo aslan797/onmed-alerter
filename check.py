@@ -58,9 +58,9 @@ def check_wa(state, now):
     except Exception as e:
         main.last_err=f"WA dialogs: {type(e).__name__}: {str(e)[:90]}"; return 0,0
     for c in dialogs:
-        if c.get('isGroup') or not c.get('unreadCount'): continue
+        if c.get('isGroup'): continue
         lm=(c.get('lastMessage') or {}).get('_data') or {}
-        if lm.get('id',{}).get('fromMe') is not False: continue   # последнее сообщение — от клиента
+        if lm.get('id',{}).get('fromMe') is not False: continue   # последнее сообщение — от клиента (вкл. прочитанные без ответа)
         t=lm.get('t')
         if not t: continue
         age=(now-t)/60
@@ -72,7 +72,7 @@ def check_wa(state, now):
         if key in state: continue
         checked+=1
         name=c.get('name','клиент')
-        txt=f"💬 WhatsApp: клиент {name} ждёт ответа {round(age)} мин (не прочитано). Кто свободен, ответьте 🙏"
+        txt=f"💬 WhatsApp: клиент {name} ждёт ответа {round(age)} мин. Кто свободен, ответьте 🙏"
         try:
             send_wa(txt, WA_MSG_CHAT); state[key]=now; sent+=1
         except Exception as e:

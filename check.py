@@ -45,6 +45,28 @@ def send_wa(text, chat=None):
         headers={'X-Crm-Token':WHTOK,'Content-Type':'application/json'}, method='POST')
     urllib.request.urlopen(req, context=CTX, timeout=40)
 
+_WA_CLOSERS={
+ 'спасибо','спс','спасибочки','спасибки','благодарю','благодарювас','спасибовам','спасибобольшое',
+ 'спасибоогромное','ок','окей','окок','хорошо','хор','хорошоспасибо','хорошоспасибобольшое','понял',
+ 'поняла','понятно','ясно','ясненько','договорились','принято','всё','все','всёспасибо','отлично',
+ 'супер','класс','спасибозаответ','ладно','угу','ага','хорошегодня','хорошеговечера','досвидания',
+ 'добро','будемждать','ждём','ждем','жду','хорошожду','оке','окспасибо','нуок','да','спсбольшое',
+ 'благодарствую','мерси','рахмет','рахметсизге','жарайды','жаксы','болады','ok','okay','thanks','thx',
+}
+def _wa_needs_reply(raw, mtype):
+    """False — короткая благодарность/подтверждение без вопроса (ответ не нужен). Медиа и вопросы → True."""
+    if mtype!='chat':                       # голосовое/фото/файл — всегда требует реакции
+        return True
+    t=(raw or '').strip()
+    if '?' in t or '???' in t:              # есть вопрос → нужен ответ
+        return True
+    norm=re.sub(r'[^а-яёa-z0-9]','',t.lower())   # убрать пробелы/пунктуацию/эмодзи
+    if not norm:                            # только эмодзи/знаки — ответ не нужен
+        return False
+    if norm in _WA_CLOSERS:                 # ровно «спасибо/ок/…» — ответ не нужен
+        return False
+    return True
+
 def wa_dialogs():
     req=urllib.request.Request(f'https://api.whatcrm.net/instances/{WHKEY}/dialogs',
         headers={'X-Crm-Token':WHTOK})
@@ -67,6 +89,7 @@ def check_wa(state, now):
         if age<WA_SLA_MIN or age>WA_MAX_AGE_MIN: continue
         dt=datetime.fromtimestamp(t)
         if not (SHIFT_FROM<=dt.hour<SHIFT_TO): continue
+        if not _wa_needs_reply(lm.get('body') or '', lm.get('type','')): continue   # «спасибо/ок» — пропускаем
         lid=c.get('id',{}).get('_serialized',''); mid=lm.get('id',{}).get('id','')
         key=f"wa-{lid}-{mid}"
         if key in state: continue

@@ -1,1 +1,1 @@
-16:00 вх=5 брейчей=0 отпр=0 | WA брейчей=0 отпр=0 | ERR: WA dialogs: RemoteDisconnected: Remote end closed connection without response
+16:15 вх=5 брейчей=0 отпр=0 | WA брейчей=1 отпр=1

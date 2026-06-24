@@ -1,1 +1,1 @@
-17:43 вх=6 брейчей=0 отпр=0 | WA брейчей=0 отпр=0 | ERR: WA dialogs: HTTPError: HTTP Error 500: Internal Server Error
+17:56 вх=8 брейчей=0 отпр=0 | WA брейчей=0 отпр=0

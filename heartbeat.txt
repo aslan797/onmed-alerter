@@ -1,1 +1,1 @@
-09:44 вх=11 брейчей=0 отпр=0 | WA брейчей=0 отпр=0 | ERR: WA dialogs: HTTPError: HTTP Error 408: Request Time-out
+09:56 вх=11 брейчей=0 отпр=0 | WA брейчей=0 отпр=0

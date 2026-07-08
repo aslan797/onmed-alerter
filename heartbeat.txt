@@ -1,1 +1,1 @@
-20:01 вх=15 брейчей=0 отпр=0 | WA брейчей=0 отпр=0
+ОШИБКА: TimeoutError: The read operation timed out

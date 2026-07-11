@@ -1,1 +1,1 @@
-08:32 вх=5 брейчей=0 отпр=0 | WA брейчей=0 отпр=0
+ОШИБКА: HTTPError: HTTP Error 502: Bad Gateway

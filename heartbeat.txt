@@ -1,1 +1,1 @@
-23:25 вх=3 брейчей=0 отпр=0 | WA брейчей=0 отпр=0 | ERR: WA dialogs: HTTPError: HTTP Error 400: Bad Request
+23:36 вх=2 брейчей=0 отпр=0 | WA брейчей=0 отпр=0 | ERR: WA dialogs: HTTPError: HTTP Error 400: Bad Request

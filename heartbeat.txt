@@ -1,1 +1,1 @@
-14:01 вх=29 брейчей=0 отпр=0 | WA брейчей=0 отпр=0 | ERR: WA dialogs: HTTPError: HTTP Error 402: Payment Required
+14:12 вх=27 брейчей=0 отпр=0 | WA брейчей=0 отпр=0 | ERR: WA dialogs: HTTPError: HTTP Error 402: Payment Required

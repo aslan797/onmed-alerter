@@ -1,1 +1,1 @@
-ОШИБКА: TimeoutError: The read operation timed out
+19:39 вх=0 брейчей=0 отпр=0 | WA брейчей=0 отпр=0

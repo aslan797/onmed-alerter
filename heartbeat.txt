@@ -1,1 +1,1 @@
-ОШИБКА: HTTPError: HTTP Error 502: Bad Gateway
+17:23 вх=12 брейчей=0 отпр=0 | WA брейчей=0 отпр=0

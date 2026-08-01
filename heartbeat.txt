@@ -1,1 +1,1 @@
-22:29 вх=5 брейчей=0 отпр=0 | WA брейчей=0 отпр=0 | ERR: WA dialogs: HTTPError: HTTP Error 504: Gateway Time-out
+22:46 вх=4 брейчей=0 отпр=0 | WA брейчей=0 отпр=0 | ERR: WA dialogs: HTTPError: HTTP Error 504: Gateway Time-out

@@ -1,1 +1,1 @@
-11:01 вх=0 брейчей=0 отпр=0 | WA брейчей=0 отпр=0 | ERR: WA dialogs: HTTPError: HTTP Error 400: Bad Request
+ОШИБКА: HTTPError: HTTP Error 502: Bad Gateway

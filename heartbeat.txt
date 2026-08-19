@@ -1,1 +1,1 @@
-ОШИБКА: HTTPError: HTTP Error 502: Bad Gateway
+11:28 вх=6 брейчей=0 отпр=0 | WA брейчей=0 отпр=0 | ERR: WA dialogs: HTTPError: HTTP Error 400: Bad Request

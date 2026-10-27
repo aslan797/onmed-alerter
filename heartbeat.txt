@@ -1,1 +1,1 @@
-ОШИБКА: URLError: <urlopen error timed out>
+ОШИБКА: URLError: <urlopen error [Errno 111] Connection refused>
